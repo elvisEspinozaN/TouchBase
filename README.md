@@ -1,16 +1,80 @@
-# React + Vite
+# Touchbase
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Touchbase is a React app for tracking people you meet, drafting follow-ups with Claude, and keeping lightweight networking notes.
 
-Currently, two official plugins are available:
+## Current Status
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Supabase project scaffold
+- contacts table migration
+- row-level security policies
+- environment and setup docs
 
-## React Compiler
+- `src/lib/supabase.js` owns the shared Supabase browser client and validates the required Vite env vars.
+- `src/lib/auth.js` for frontend:
+  - `signInWithMagicLink(email, options?)`
+  - `exchangeCodeForSession(url?)`
+  - `getSession()`
+  - `getCurrentUser()`
+  - `onAuthStateChange(callback)`
+  - `signOut()`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The intended frontend flow is:
 
-## Expanding the ESLint configuration
+1. Collect the user's email in a login form.
+2. Call `signInWithMagicLink(email)`.
+3. On app boot, call `exchangeCodeForSession()` once to consume any redirect code from Supabase.
+4. Use `getSession()` and `onAuthStateChange(...)` to drive signed-in and signed-out UI states.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+At this point the app still reads and writes contacts through `localStorage`. The auth layer is available, but no screen or route currently consumes it.
+
+## Local App Development
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Copy the environment template and fill in your Anthropic key:
+
+   ```bash
+   cp .env
+   ```
+
+3. Start the Vite app:
+
+   ```bash
+   npm run dev
+   ```
+
+## Supabase Phase 1 Setup
+
+1. Initialize local Supabase services:
+
+   ```bash
+   supabase start
+   ```
+
+2. Apply the contacts schema:
+
+   ```bash
+   supabase db reset
+   ```
+
+3. Use the local API URL and anon key in `.env` for phase 2:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+
+4. Keep `VITE_ANTHROPIC_API_KEY` for now. The Anthropic browser call is still the live code path.
+
+## Schema Notes
+
+The Supabase schema mirrors the current app state:
+
+- one `contacts` table
+- ownership via `user_id`
+- contact timing fields for both `met_on` and `last_contacted_on`
+- draft subject/body stored directly on the contact row
+- follow-up state stored on the contact row as status, snooze, and reminder flags
+
+That keeps phase 2 focused on swapping persistence and auth without redesigning the product model at the same time.
