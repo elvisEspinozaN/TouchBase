@@ -4,9 +4,11 @@ import CardGrid from './components/CardGrid.jsx';
 import ChatInput from './components/ChatInput.jsx';
 import ReminderBanner from './components/ReminderBanner.jsx';
 import FollowUpModal from './components/FollowUpModal.jsx';
+import LoginScreen from './components/LoginScreen.jsx';
 import { parseContact, generateFollowUp } from './lib/claude.js';
 import { loadContacts, addContact, updateContact, deleteContact } from './lib/storage.js';
 import { getOverdueContacts, snoozeContact, markSent, saveDraft } from './lib/followup.js';
+import { getSession, onAuthStateChange, signOut } from './lib/auth.js';
 
 function isOverdueAfterSnooze(contact) {
   if (!contact.snoozedUntil) return false;
@@ -14,6 +16,8 @@ function isOverdueAfterSnooze(contact) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [contacts, setContacts] = useState([]);
   const [parsing, setParsing] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
@@ -21,7 +25,25 @@ export default function App() {
   const [error, setError] = useState(null);
   const [draftingReminder, setDraftingReminder] = useState(false);
 
+  // Session check on mount
   useEffect(() => {
+    getSession().then(session => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+  }, []);
+
+  // Auth state listener
+  useEffect(() => {
+    const sub = onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (!session) setContacts([]);
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
     const loaded = loadContacts();
     setContacts(loaded);
 
@@ -122,6 +144,16 @@ export default function App() {
   const overdue = getOverdueContacts(contacts);
   const topReminder = overdue[0] || null;
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f8f7f4' }}>
+        <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return <LoginScreen />;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -141,6 +173,15 @@ export default function App() {
               {overdue.length} overdue
             </span>
           )}
+          <span className="text-xs text-gray-400 hidden sm:block truncate max-w-[140px]">
+            {user.email}
+          </span>
+          <button
+            onClick={() => signOut()}
+            className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            Log out
+          </button>
         </div>
       </header>
 
