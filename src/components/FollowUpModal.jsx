@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { daysSince } from '../lib/followup.js';
 
+function formatDaysAgo(days) {
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
+}
+
 export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMarkSent, onDelete, onUpdateLastContacted, drafting }) {
   const [draft, setDraft] = useState(contact.draft || null);
   const [localSubject, setLocalSubject] = useState(contact.draft?.subject || '');
@@ -38,69 +46,68 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
   const hasDraft = (draft || contact.draft) && localBody;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(45,42,38,0.4)', backdropFilter: 'blur(8px)' }} onClick={onClose}>
       <div
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-xl">
-                {contact.name?.[0]?.toUpperCase()}
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">{contact.name}</h2>
-                {contact.role && <p className="text-sm text-gray-500">{contact.role}</p>}
-              </div>
+            <div>
+              <h2 className="text-3xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>{contact.name}</h2>
+              {contact.role && <p className="text-sm italic mt-0.5" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>{contact.role}</p>}
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+            <button onClick={onClose} className="p-1.5 rounded-lg transition-colors hover:bg-[var(--color-bg)]" style={{ color: 'var(--color-text-faint)' }}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          <div className="flex items-center gap-3 mt-4 text-sm text-gray-600">
-            <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg font-medium">{contact.event}</span>
-            <span className="text-gray-400">·</span>
-            <span>{days === 0 ? 'Today' : days === 1 ? 'Yesterday' : `${days} days ago`}</span>
+          <div className="flex items-center gap-2.5 mt-4 text-sm">
+            <span className="px-2 py-0.5 rounded-md font-medium text-xs" style={{ background: 'var(--color-teal-light)', color: 'var(--color-teal)' }}>
+              {contact.event}
+            </span>
+            <span style={{ color: 'var(--color-text-faint)' }}>·</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>{formatDaysAgo(days)}</span>
           </div>
         </div>
 
-        {/* Topics + Notes */}
-        <div className="p-6 border-b border-gray-100 space-y-3">
+        {/* Details */}
+        <div className="p-6 space-y-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
           {contact.topics?.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Topics discussed</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-faint)' }}>Topics discussed</p>
               <div className="flex flex-wrap gap-1.5">
                 {contact.topics.map((t, i) => (
-                  <span key={i} className="text-sm bg-gray-100 text-gray-700 px-2.5 py-1 rounded-xl">{t}</span>
+                  <span key={i} className="text-sm px-2.5 py-1 rounded-lg" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>{t}</span>
                 ))}
               </div>
             </div>
           )}
           {contact.notes && (
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notes</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{contact.notes}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-faint)' }}>Notes</p>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{contact.notes}</p>
             </div>
           )}
           {contact.email && (
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Email</p>
-              <p className="text-sm text-gray-700">{contact.email}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-faint)' }}>Email</p>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{contact.email}</p>
             </div>
           )}
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Last contacted</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-faint)' }}>Last contacted</p>
             <input
               type="date"
               value={lastContactedDate}
               max={new Date().toISOString().split('T')[0]}
               onChange={e => onUpdateLastContacted(contact.id, e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
+              style={{ border: '1px solid var(--color-border)', color: 'var(--color-text)', background: 'var(--color-surface)' }}
             />
           </div>
         </div>
@@ -111,7 +118,10 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
             <button
               onClick={handleGenerateDraft}
               disabled={drafting}
-              className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white rounded-2xl py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              className="w-full text-white rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: 'var(--color-teal)' }}
+              onMouseEnter={e => !drafting && (e.target.style.filter = 'brightness(1.1)')}
+              onMouseLeave={e => e.target.style.filter = ''}
             >
               {drafting ? (
                 <>
@@ -119,54 +129,63 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
                   Generating message...
                 </>
               ) : (
-                <>
-                  <span>✨</span> Generate Follow-up Message
-                </>
+                'Generate Follow-up Message'
               )}
             </button>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Follow-up draft</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--color-text-faint)' }}>Follow-up draft</p>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Subject</label>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--color-text-muted)' }}>Subject</label>
                 <input
                   type="text"
                   value={localSubject}
                   onChange={e => setLocalSubject(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
+                  style={{ border: '1px solid var(--color-border)' }}
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Message</label>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--color-text-muted)' }}>Message</label>
                 <textarea
                   value={localBody}
                   onChange={e => setLocalBody(e.target.value)}
                   rows={5}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)] resize-none"
+                  style={{ border: '1px solid var(--color-border)' }}
                 />
               </div>
 
               <div className="flex gap-2">
                 <button
                   onClick={handleSendEmail}
-                  className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 text-white rounded-lg py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+                  style={{ background: 'var(--color-teal)' }}
+                  onMouseEnter={e => e.target.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={e => e.target.style.filter = ''}
                 >
-                  <span>✉️</span> Send Email
+                  Send Email
                 </button>
                 <button
                   onClick={handleCopyLinkedIn}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 text-white rounded-lg py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+                  style={{ background: '#0A66C2' }}
+                  onMouseEnter={e => e.target.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={e => e.target.style.filter = ''}
                 >
-                  {copied ? '✓ Copied!' : <><span>💼</span> Copy for LinkedIn</>}
+                  {copied ? 'Copied!' : 'Copy for LinkedIn'}
                 </button>
               </div>
 
               <button
                 onClick={handleGenerateDraft}
                 disabled={drafting}
-                className="w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
+                className="w-full text-xs py-1 transition-colors"
+                style={{ color: 'var(--color-text-faint)' }}
+                onMouseEnter={e => e.target.style.color = 'var(--color-text-muted)'}
+                onMouseLeave={e => e.target.style.color = 'var(--color-text-faint)'}
               >
                 Regenerate message
               </button>
@@ -176,7 +195,10 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
           {/* Delete */}
           <button
             onClick={() => { onDelete(contact.id); onClose(); }}
-            className="w-full text-xs text-red-400 hover:text-red-600 transition-colors py-1 mt-2"
+            className="w-full text-xs py-1 mt-2 transition-colors"
+            style={{ color: 'var(--color-terracotta)' }}
+            onMouseEnter={e => e.target.style.opacity = '0.7'}
+            onMouseLeave={e => e.target.style.opacity = '1'}
           >
             Remove contact
           </button>

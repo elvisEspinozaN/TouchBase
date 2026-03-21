@@ -125,19 +125,19 @@ export default function App() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
+      <header className="px-6 py-4 flex items-center justify-between shrink-0" style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
+        <div className="flex items-center gap-2.5">
           <span className="text-2xl">🤝</span>
-          <h1 className="text-xl font-bold text-gray-900">Touchbase</h1>
+          <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Touchbase</h1>
         </div>
         <div className="flex items-center gap-3">
           {contacts.length > 0 && (
-            <span className="text-sm text-gray-400">
+            <span className="text-sm" style={{ color: 'var(--color-text-faint)' }}>
               {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
             </span>
           )}
           {overdue.length > 0 && (
-            <span className="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--color-terracotta-light)', color: 'var(--color-terracotta)' }}>
               {overdue.length} overdue
             </span>
           )}
@@ -156,9 +156,9 @@ export default function App() {
 
       {/* Error banner */}
       {error && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 text-xl leading-none ml-4">×</button>
+        <div className="px-5 py-2.5 flex items-center justify-between" style={{ background: 'var(--color-terracotta-light)', borderBottom: '1px solid #EACFC7' }}>
+          <p className="text-sm" style={{ color: 'var(--color-terracotta)' }}>{error}</p>
+          <button onClick={() => setError(null)} className="text-xl leading-none ml-4" style={{ color: 'var(--color-terracotta)', opacity: 0.5 }}>×</button>
         </div>
       )}
 

@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-bg: #F5F0EB;
+  --color-surface: #FFFDF9;
+  --color-text: #2D2A26;
+  --color-text-muted: #8A8279;
+  --color-text-faint: #B5AEA5;
+  --color-border: #E8E2DA;
+  --color-teal: #1A6B5A;
+  --color-teal-light: #E8F5F0;
+  --color-amber: #C0912B;
+  --color-amber-light: #FDF6E3;
+  --color-terracotta: #C4654A;
+  --color-terracotta-light: #FDF0EC;
+  --font-display: 'Caveat', cursive;
+  --font-body: 'Newsreader', Georgia, serif;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -9,12 +26,29 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f8f7f4;
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-faint);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
