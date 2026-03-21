@@ -27,7 +27,8 @@ Schema:
   "topics": string[] (2-5 key conversation topics),
   "notes": string (anything else worth remembering),
   "email": "",
-  "followUpDays": number (3 if not specified)
+  "followUpDays": number (3 if not specified),
+  "lastContacted": string (ISO date of when user last spoke to this person, infer from "last talked 2 days ago", "spoke last week", etc., or use "date" value if not mentioned)
 }
 
 Recap: "${rawText}"`,
@@ -35,14 +36,32 @@ Recap: "${rawText}"`,
     ],
   });
 
-  const text = response.content.find(b => b.type === 'text')?.text || '';
+  const text = response.content.find(b => b.type === 'text')?.text?.trim() || '';
+  const cleaned = text.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
+
+  console.log('[TouchBase] Raw API response:', text);
+  console.log('[TouchBase] Cleaned for parsing:', cleaned);
+
+  let parsed;
   try {
-    return JSON.parse(text);
+    parsed = JSON.parse(cleaned);
   } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error('Could not parse contact from response');
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) parsed = JSON.parse(match[0]);
+    else throw new Error('Could not parse contact from response');
   }
+
+  // Normalize to array
+  const results = Array.isArray(parsed) ? parsed : [parsed];
+
+  console.log('[TouchBase] Parsed result:', results);
+
+  for (const r of results) {
+    if (!r.name) throw new Error('Could not parse contact — missing name');
+    if (!r.date) r.date = today;
+  }
+
+  return results;
 }
 
 export async function generateFollowUp(contact) {
@@ -70,11 +89,12 @@ Body should be 2-4 sentences, warm, specific to what you discussed.`,
     ],
   });
 
-  const text = response.content.find(b => b.type === 'text')?.text || '';
+  const text = response.content.find(b => b.type === 'text')?.text?.trim() || '';
+  const cleaned = text.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
   try {
-    return JSON.parse(text);
+    return JSON.parse(cleaned);
   } catch {
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]);
     throw new Error('Could not parse follow-up from response');
   }
