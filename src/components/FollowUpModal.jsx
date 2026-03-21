@@ -10,18 +10,17 @@ function formatDaysAgo(days) {
 }
 
 export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMarkSent, onDelete, onUpdateLastContacted, drafting }) {
-  const [draft, setDraft] = useState(contact.draft || null);
-  const [localSubject, setLocalSubject] = useState(contact.draft?.subject || '');
-  const [localBody, setLocalBody] = useState(contact.draft?.body || '');
+  const [localSubject, setLocalSubject] = useState(contact.draftSubject || '');
+  const [localBody, setLocalBody] = useState(contact.draftBody || '');
   const [copied, setCopied] = useState(false);
 
   const lastContactedDate = contact.lastContacted || contact.date;
   const days = daysSince(lastContactedDate);
+  const hasDraft = Boolean(localSubject || localBody);
 
   async function handleGenerateDraft() {
     const result = await onGenerateDraft(contact);
     if (result) {
-      setDraft(result);
       setLocalSubject(result.subject);
       setLocalBody(result.body);
     }
@@ -32,18 +31,21 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
     const body = encodeURIComponent(localBody || '');
     const to = contact.email ? encodeURIComponent(contact.email) : '';
     window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_blank');
-    onMarkSent(contact.id);
+    onMarkSent(contact.id, {
+      draftSubject: localSubject,
+      draftBody: localBody,
+    });
   }
 
   function handleCopyLinkedIn() {
-    const text = `${localBody}`;
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(localBody);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    onMarkSent(contact.id);
+    onMarkSent(contact.id, {
+      draftSubject: localSubject,
+      draftBody: localBody,
+    });
   }
-
-  const hasDraft = (draft || contact.draft) && localBody;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(45,42,38,0.4)', backdropFilter: 'blur(8px)' }} onClick={onClose}>
@@ -81,8 +83,8 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-faint)' }}>Topics discussed</p>
               <div className="flex flex-wrap gap-1.5">
-                {contact.topics.map((t, i) => (
-                  <span key={i} className="text-sm px-2.5 py-1 rounded-lg" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>{t}</span>
+                {contact.topics.map((topic, index) => (
+                  <span key={index} className="text-sm px-2.5 py-1 rounded-lg" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>{topic}</span>
                 ))}
               </div>
             </div>
@@ -105,7 +107,7 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
               type="date"
               value={lastContactedDate}
               max={new Date().toISOString().split('T')[0]}
-              onChange={e => onUpdateLastContacted(contact.id, e.target.value)}
+              onChange={event => onUpdateLastContacted(contact.id, event.target.value)}
               className="rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
               style={{ border: '1px solid var(--color-border)', color: 'var(--color-text)', background: 'var(--color-surface)' }}
             />
@@ -120,8 +122,8 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
               disabled={drafting}
               className="w-full text-white rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               style={{ background: 'var(--color-teal)' }}
-              onMouseEnter={e => !drafting && (e.target.style.filter = 'brightness(1.1)')}
-              onMouseLeave={e => e.target.style.filter = ''}
+              onMouseEnter={event => !drafting && (event.currentTarget.style.filter = 'brightness(1.1)')}
+              onMouseLeave={event => { event.currentTarget.style.filter = ''; }}
             >
               {drafting ? (
                 <>
@@ -141,7 +143,7 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
                 <input
                   type="text"
                   value={localSubject}
-                  onChange={e => setLocalSubject(e.target.value)}
+                  onChange={event => setLocalSubject(event.target.value)}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
                   style={{ border: '1px solid var(--color-border)' }}
                 />
@@ -151,7 +153,7 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
                 <label className="text-xs mb-1 block" style={{ color: 'var(--color-text-muted)' }}>Message</label>
                 <textarea
                   value={localBody}
-                  onChange={e => setLocalBody(e.target.value)}
+                  onChange={event => setLocalBody(event.target.value)}
                   rows={5}
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)] resize-none"
                   style={{ border: '1px solid var(--color-border)' }}
@@ -163,8 +165,8 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
                   onClick={handleSendEmail}
                   className="flex-1 text-white rounded-lg py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
                   style={{ background: 'var(--color-teal)' }}
-                  onMouseEnter={e => e.target.style.filter = 'brightness(1.1)'}
-                  onMouseLeave={e => e.target.style.filter = ''}
+                  onMouseEnter={event => { event.currentTarget.style.filter = 'brightness(1.1)'; }}
+                  onMouseLeave={event => { event.currentTarget.style.filter = ''; }}
                 >
                   Send Email
                 </button>
@@ -172,8 +174,8 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
                   onClick={handleCopyLinkedIn}
                   className="flex-1 text-white rounded-lg py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
                   style={{ background: '#0A66C2' }}
-                  onMouseEnter={e => e.target.style.filter = 'brightness(1.1)'}
-                  onMouseLeave={e => e.target.style.filter = ''}
+                  onMouseEnter={event => { event.currentTarget.style.filter = 'brightness(1.1)'; }}
+                  onMouseLeave={event => { event.currentTarget.style.filter = ''; }}
                 >
                   {copied ? 'Copied!' : 'Copy for LinkedIn'}
                 </button>
@@ -184,8 +186,8 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
                 disabled={drafting}
                 className="w-full text-xs py-1 transition-colors"
                 style={{ color: 'var(--color-text-faint)' }}
-                onMouseEnter={e => e.target.style.color = 'var(--color-text-muted)'}
-                onMouseLeave={e => e.target.style.color = 'var(--color-text-faint)'}
+                onMouseEnter={event => { event.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                onMouseLeave={event => { event.currentTarget.style.color = 'var(--color-text-faint)'; }}
               >
                 Regenerate message
               </button>
@@ -197,8 +199,8 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
             onClick={() => { onDelete(contact.id); onClose(); }}
             className="w-full text-xs py-1 mt-2 transition-colors"
             style={{ color: 'var(--color-terracotta)' }}
-            onMouseEnter={e => e.target.style.opacity = '0.7'}
-            onMouseLeave={e => e.target.style.opacity = '1'}
+            onMouseEnter={event => { event.currentTarget.style.opacity = '0.7'; }}
+            onMouseLeave={event => { event.currentTarget.style.opacity = '1'; }}
           >
             Remove contact
           </button>
