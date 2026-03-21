@@ -10,10 +10,53 @@ function getDefaultEmailRedirectTo() {
 
 function normalizeEmail(email) {
   if (typeof email !== "string" || email.trim() === "") {
-    throw new Error("A valid email address is required to send a magic link.");
+    throw new Error("A valid email address is required.");
   }
 
   return email.trim();
+}
+
+function normalizePassword(password) {
+  if (typeof password !== "string" || password.length < 6) {
+    throw new Error("A password with at least 6 characters is required.");
+  }
+
+  return password;
+}
+
+export async function signUpWithEmailPassword(email, password, options = {}) {
+  const supabase = getSupabaseClient();
+  const redirectTo = options.emailRedirectTo ?? getDefaultEmailRedirectTo();
+  const metadata = options.data ?? undefined;
+
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizeEmail(email),
+    password: normalizePassword(password),
+    options: {
+      ...(metadata ? { data: metadata } : {}),
+      ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function signInWithEmailPassword(email, password) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: normalizeEmail(email),
+    password: normalizePassword(password),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
 
 export async function signInWithMagicLink(email, options = {}) {

@@ -11,6 +11,8 @@ Touchbase is a React app for tracking people you meet, drafting follow-ups with 
 
 - `src/lib/supabase.js` owns the shared Supabase browser client and validates the required Vite env vars.
 - `src/lib/auth.js` for frontend:
+  - `signUpWithEmailPassword(email, password, options?)`
+  - `signInWithEmailPassword(email, password)`
   - `signInWithMagicLink(email, options?)`
   - `exchangeCodeForSession(url?)`
   - `getSession()`
@@ -20,10 +22,13 @@ Touchbase is a React app for tracking people you meet, drafting follow-ups with 
 
 The intended frontend flow is:
 
-1. Collect the user's email in a login form.
-2. Call `signInWithMagicLink(email)`.
-3. On app boot, call `exchangeCodeForSession()` once to consume any redirect code from Supabase.
-4. Use `getSession()` and `onAuthStateChange(...)` to drive signed-in and signed-out UI states.
+1. Collect the user's email and password in a login or signup form.
+2. Call `signUpWithEmailPassword(email, password)` for signup or `signInWithEmailPassword(email, password)` for login.
+3. Keep `signInWithMagicLink(email)` available as an alternate flow if you still want passwordless auth.
+4. On app boot, call `exchangeCodeForSession()` once to consume any redirect code from Supabase.
+5. Use `getSession()` and `onAuthStateChange(...)` to drive signed-in and signed-out UI states.
+
+If you disable email confirmations in Supabase, password signup can create an immediately usable session. If confirmations stay enabled, signup may still require the user to verify their email before the session is active.
 
 At this point the app still reads and writes contacts through `localStorage`. The auth layer is available, but no screen or route currently consumes it.
 
@@ -38,7 +43,7 @@ At this point the app still reads and writes contacts through `localStorage`. Th
 2. Copy the environment template and fill in your Anthropic key:
 
    ```bash
-   cp .env
+   cp .env.example .env
    ```
 
 3. Start the Vite app:
