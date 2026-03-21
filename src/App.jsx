@@ -46,14 +46,18 @@ export default function App() {
     setParsing(true);
     setError(null);
     try {
-      const parsed = await parseContact(text);
-      const contact = {
-        id: uuidv4(),
-        followUpStatus: 'pending',
-        remindedOnce: false,
-        ...parsed,
-      };
-      const updated = addContact(contact);
+      const results = await parseContact(text);
+      let updated;
+      for (const parsed of results) {
+        const contact = {
+          id: uuidv4(),
+          followUpStatus: 'pending',
+          remindedOnce: false,
+          ...parsed,
+          lastContacted: parsed.lastContacted || parsed.date,
+        };
+        updated = addContact(contact);
+      }
       setContacts(updated);
     } catch (e) {
       setError(e.message || 'Failed to parse contact. Check your API key in .env');
@@ -102,6 +106,12 @@ export default function App() {
   function handleMarkSent(id) {
     markSent(id, contacts, setContacts);
     setSelectedContact(prev => prev?.id === id ? { ...prev, followUpStatus: 'sent' } : prev);
+  }
+
+  function handleUpdateLastContacted(id, date) {
+    const updated = updateContact(id, { lastContacted: date });
+    setContacts(updated);
+    setSelectedContact(prev => prev?.id === id ? { ...prev, lastContacted: date } : prev);
   }
 
   function handleDeleteContact(id) {
@@ -166,6 +176,7 @@ export default function App() {
           onGenerateDraft={handleGenerateDraftInModal}
           onMarkSent={handleMarkSent}
           onDelete={handleDeleteContact}
+          onUpdateLastContacted={handleUpdateLastContacted}
           drafting={drafting}
         />
       )}

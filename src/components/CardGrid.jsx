@@ -18,7 +18,11 @@ export default function CardGrid({ contacts, onCardClick }) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {contacts.map(contact => (
+        {[...contacts].sort((a, b) => {
+          const dateA = new Date(a.lastContacted || a.date);
+          const dateB = new Date(b.lastContacted || b.date);
+          return dateB - dateA;
+        }).map(contact => (
           <ContactCard
             key={contact.id}
             contact={contact}

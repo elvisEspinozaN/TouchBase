@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { daysSince } from '../lib/followup.js';
 
-export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMarkSent, onDelete, drafting }) {
+export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMarkSent, onDelete, onUpdateLastContacted, drafting }) {
   const [draft, setDraft] = useState(contact.draft || null);
   const [localSubject, setLocalSubject] = useState(contact.draft?.subject || '');
   const [localBody, setLocalBody] = useState(contact.draft?.body || '');
   const [copied, setCopied] = useState(false);
 
-  const days = daysSince(contact.date);
+  const lastContactedDate = contact.lastContacted || contact.date;
+  const days = daysSince(lastContactedDate);
 
   async function handleGenerateDraft() {
     const result = await onGenerateDraft(contact);
@@ -92,6 +93,16 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
               <p className="text-sm text-gray-700">{contact.email}</p>
             </div>
           )}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Last contacted</p>
+            <input
+              type="date"
+              value={lastContactedDate}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={e => onUpdateLastContacted(contact.id, e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            />
+          </div>
         </div>
 
         {/* Follow-up section */}

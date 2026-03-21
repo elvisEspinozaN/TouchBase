@@ -8,7 +8,7 @@ function getRotation(id) {
 }
 
 function StatusDot({ contact }) {
-  const days = daysSince(contact.date);
+  const days = daysSince(contact.lastContacted || contact.date);
   if (contact.followUpStatus === 'sent') {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
@@ -34,7 +34,9 @@ function StatusDot({ contact }) {
 
 export default function ContactCard({ contact, onClick }) {
   const rotation = getRotation(contact.id);
-  const days = daysSince(contact.date);
+  const lastContactedDate = contact.lastContacted || contact.date;
+  const daysLastContacted = daysSince(lastContactedDate);
+  const daysMet = daysSince(contact.date);
 
   return (
     <button
@@ -61,7 +63,7 @@ export default function ContactCard({ contact, onClick }) {
       <div className="mt-3 pt-3 border-t border-gray-50">
         <p className="text-xs text-indigo-600 font-medium truncate">{contact.event}</p>
         <p className="text-xs text-gray-400 mt-0.5">
-          {days === 0 ? 'Today' : days === 1 ? 'Yesterday' : `${days} days ago`}
+          Last talked: {daysLastContacted === 0 ? 'Today' : daysLastContacted === 1 ? 'Yesterday' : `${daysLastContacted}d ago`}
         </p>
       </div>
 
