@@ -1,18 +1,21 @@
-import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useEffect, useState } from 'react';
 import CardGrid from './components/CardGrid.jsx';
 import ChatInput from './components/ChatInput.jsx';
 import ReminderBanner from './components/ReminderBanner.jsx';
 import FollowUpModal from './components/FollowUpModal.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import { parseContact, generateFollowUp } from './lib/claude.js';
-import { loadContacts, addContact, updateContact, deleteContact } from './lib/storage.js';
-import { getOverdueContacts, snoozeContact, markSent, saveDraft } from './lib/followup.js';
+import { addContact, deleteContact, loadContacts, updateContact } from './lib/storage.js';
+import { getMarkSentUpdates, getOverdueContacts, getSaveDraftUpdates, getSnoozeUpdates, hasDraft } from './lib/followup.js';
 import { getSession, onAuthStateChange, signOut } from './lib/auth.js';
 
 function isOverdueAfterSnooze(contact) {
   if (!contact.snoozedUntil) return false;
   return new Date() >= new Date(contact.snoozedUntil);
+}
+
+function replaceContact(contacts, updatedContact) {
+  return contacts.map(contact => contact.id === updatedContact.id ? updatedContact : contact);
 }
 
 export default function App() {
@@ -25,85 +28,128 @@ export default function App() {
   const [error, setError] = useState(null);
   const [draftingReminder, setDraftingReminder] = useState(false);
 
-  // Session check on mount
   useEffect(() => {
-    getSession().then(session => {
+    getSession()
+      .then(session => {
+        setUser(session?.user ?? null);
+      })
+      .catch(sessionError => {
+        setError(sessionError.message || 'Failed to restore your session.');
+      })
+      .finally(() => {
+        setAuthLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    const subscription = onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
-    });
-  }, []);
 
-  // Auth state listener
-  useEffect(() => {
-    const sub = onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (!session) setContacts([]);
+      if (!session) {
+        setContacts([]);
+        setSelectedContact(null);
+      }
     });
-    return () => sub.unsubscribe();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    const loaded = loadContacts();
-    setContacts(loaded);
+    if (!user) {
+      return undefined;
+    }
 
-    // Auto-draft for contacts that were snoozed and are overdue again
-    const autoDraft = async () => {
-      let current = [...loaded];
-      for (const c of current) {
-        if (c.remindedOnce && c.followUpStatus === 'pending' && isOverdueAfterSnooze(c)) {
-          try {
-            const draft = await generateFollowUp(c);
-            const updated = updateContact(c.id, { followUpStatus: 'drafted', draft });
-            current = updated;
-            setContacts([...updated]);
-          } catch {}
+    let cancelled = false;
+
+    async function initializeContacts() {
+      try {
+        const loaded = await loadContacts();
+        if (cancelled) return;
+
+        setContacts(loaded);
+
+        // Auto-draft for contacts that were snoozed and are overdue again
+        let current = [...loaded];
+        for (const contact of loaded) {
+          if (contact.remindedOnce && contact.followUpStatus === 'pending' && isOverdueAfterSnooze(contact)) {
+            try {
+              const draft = await generateFollowUp(contact);
+              const updatedContact = await updateContact(contact.id, getSaveDraftUpdates(draft));
+              current = replaceContact(current, updatedContact);
+              if (!cancelled) {
+                setContacts(current);
+              }
+            } catch (autoDraftError) {
+              console.error('Auto-draft failed for contact', contact.id, autoDraftError);
+            }
+          }
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError.message || 'Failed to load contacts from Supabase.');
         }
       }
+    }
+
+    initializeContacts();
+
+    return () => {
+      cancelled = true;
     };
-    autoDraft();
-  }, []);
+  }, [user]);
 
   async function handleAddContact(text) {
     setParsing(true);
     setError(null);
+
     try {
       const results = await parseContact(text);
-      let updated;
+
       for (const parsed of results) {
-        const contact = {
-          id: uuidv4(),
+        await addContact({
           followUpStatus: 'pending',
           remindedOnce: false,
           ...parsed,
           lastContacted: parsed.lastContacted || parsed.date,
-        };
-        updated = addContact(contact);
+          draftSubject: '',
+          draftBody: '',
+        });
       }
-      setContacts(updated);
-    } catch (e) {
-      setError(e.message || 'Failed to parse contact. Check your API key in .env');
+
+      const refreshed = await loadContacts();
+      setContacts(refreshed);
+    } catch (parseError) {
+      setError(parseError.message || 'Failed to parse contact. Check your API key in .env');
     } finally {
       setParsing(false);
     }
   }
 
-  function handleSnooze(id) {
-    snoozeContact(id, contacts, setContacts);
+  async function handleSnooze(id) {
+    try {
+      const updatedContact = await updateContact(id, getSnoozeUpdates());
+      setContacts(prev => replaceContact(prev, updatedContact));
+      setSelectedContact(prev => prev?.id === id ? updatedContact : prev);
+    } catch (snoozeError) {
+      setError(snoozeError.message || 'Failed to snooze reminder.');
+    }
   }
 
   async function handleDraftNow(contact) {
-    if (contact.followUpStatus === 'drafted' || contact.draft) {
+    if (contact.followUpStatus === 'drafted' || hasDraft(contact)) {
       setSelectedContact(contact);
       return;
     }
+
     setDraftingReminder(true);
     try {
       const draft = await generateFollowUp(contact);
-      saveDraft(contact.id, draft, contacts, setContacts);
-      setSelectedContact({ ...contact, followUpStatus: 'drafted', draft });
-    } catch (e) {
-      setError('Failed to generate follow-up. Try again.');
+      const updatedContact = await updateContact(contact.id, getSaveDraftUpdates(draft));
+      setContacts(prev => replaceContact(prev, updatedContact));
+      setSelectedContact(updatedContact);
+    } catch (draftError) {
+      setError(draftError.message || 'Failed to generate follow-up. Try again.');
     } finally {
       setDraftingReminder(false);
     }
@@ -113,32 +159,46 @@ export default function App() {
     setDrafting(true);
     try {
       const draft = await generateFollowUp(contact);
-      saveDraft(contact.id, draft, contacts, setContacts);
-      const updatedContact = { ...contact, followUpStatus: 'drafted', draft };
+      const updatedContact = await updateContact(contact.id, getSaveDraftUpdates(draft));
+      setContacts(prev => replaceContact(prev, updatedContact));
       setSelectedContact(updatedContact);
       return draft;
-    } catch (e) {
-      setError('Failed to generate follow-up. Try again.');
+    } catch (draftError) {
+      setError(draftError.message || 'Failed to generate follow-up. Try again.');
       return null;
     } finally {
       setDrafting(false);
     }
   }
 
-  function handleMarkSent(id) {
-    markSent(id, contacts, setContacts);
-    setSelectedContact(prev => prev?.id === id ? { ...prev, followUpStatus: 'sent' } : prev);
+  async function handleMarkSent(id, draftUpdates = {}) {
+    try {
+      const updatedContact = await updateContact(id, getMarkSentUpdates(draftUpdates));
+      setContacts(prev => replaceContact(prev, updatedContact));
+      setSelectedContact(prev => prev?.id === id ? updatedContact : prev);
+    } catch (statusError) {
+      setError(statusError.message || 'Failed to update follow-up status.');
+    }
   }
 
-  function handleUpdateLastContacted(id, date) {
-    const updated = updateContact(id, { lastContacted: date });
-    setContacts(updated);
-    setSelectedContact(prev => prev?.id === id ? { ...prev, lastContacted: date } : prev);
+  async function handleUpdateLastContacted(id, date) {
+    try {
+      const updatedContact = await updateContact(id, { lastContacted: date });
+      setContacts(prev => replaceContact(prev, updatedContact));
+      setSelectedContact(prev => prev?.id === id ? updatedContact : prev);
+    } catch (updateError) {
+      setError(updateError.message || 'Failed to update last-contacted date.');
+    }
   }
 
-  function handleDeleteContact(id) {
-    const updated = deleteContact(id);
-    setContacts(updated);
+  async function handleDeleteContact(id) {
+    try {
+      await deleteContact(id);
+      setContacts(prev => prev.filter(contact => contact.id !== id));
+      setSelectedContact(prev => prev?.id === id ? null : prev);
+    } catch (deleteError) {
+      setError(deleteError.message || 'Failed to delete contact.');
+    }
   }
 
   const overdue = getOverdueContacts(contacts);
@@ -152,7 +212,9 @@ export default function App() {
     );
   }
 
-  if (!user) return <LoginScreen />;
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   return (
     <div className="flex flex-col h-full">
