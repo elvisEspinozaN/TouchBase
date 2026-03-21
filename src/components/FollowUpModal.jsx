@@ -33,6 +33,7 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
     const to = contact.email ? encodeURIComponent(contact.email) : '';
     window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_blank');
     onMarkSent(contact.id);
+    onUpdateLastContacted(contact.id, new Date().toISOString().split('T')[0]);
   }
 
   function handleCopyLinkedIn() {
@@ -41,6 +42,7 @@ export default function FollowUpModal({ contact, onClose, onGenerateDraft, onMar
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     onMarkSent(contact.id);
+    onUpdateLastContacted(contact.id, new Date().toISOString().split('T')[0]);
   }
 
   const hasDraft = (draft || contact.draft) && localBody;
