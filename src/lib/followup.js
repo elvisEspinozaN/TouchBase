@@ -9,7 +9,7 @@ export function daysSince(dateStr) {
 export function isOverdue(contact) {
   if (contact.followUpStatus === 'sent') return false;
   const days = daysSince(contact.snoozedUntil || contact.lastContacted || contact.date);
-  return days > 2;
+  return days >= 2;
 }
 
 export function hasBeenReminded(contact) {

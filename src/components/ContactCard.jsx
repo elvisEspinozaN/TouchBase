@@ -1,29 +1,9 @@
 import { daysSince } from '../lib/followup.js';
 
 function getFreshnessColor(days) {
-  if (days <= 2) return 'var(--color-teal)';
-  if (days <= 5) return 'var(--color-amber)';
+  if (days < 2) return 'var(--color-teal)';
+  if (days < 4) return 'var(--color-amber)';
   return 'var(--color-terracotta)';
-}
-
-function StatusBadge({ contact }) {
-  if (contact.followUpStatus === 'sent') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
-        style={{ background: 'var(--color-teal-light)', color: 'var(--color-teal)' }}>
-        Sent
-      </span>
-    );
-  }
-  if (contact.followUpStatus === 'drafted') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
-        style={{ background: 'var(--color-amber-light)', color: 'var(--color-amber)' }}>
-        Draft
-      </span>
-    );
-  }
-  return null;
 }
 
 function formatDaysAgo(days) {
@@ -50,12 +30,9 @@ export default function ContactCard({ contact, onClick }) {
       style={{ borderLeftColor: freshnessColor }}
     >
       {/* Name + status */}
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="text-3xl leading-tight truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-          {contact.name}
-        </h3>
-        <StatusBadge contact={contact} />
-      </div>
+      <h3 className="text-3xl leading-tight truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+        {contact.name}
+      </h3>
 
       {/* Role */}
       {contact.role && (
