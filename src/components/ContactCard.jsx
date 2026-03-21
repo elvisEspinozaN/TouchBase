@@ -1,76 +1,85 @@
 import { daysSince } from '../lib/followup.js';
 
-const rotations = [-2, -1, 0, 1, 2];
-
-function getRotation(id) {
-  const sum = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return rotations[sum % rotations.length];
+function getFreshnessColor(days) {
+  if (days <= 3) return 'var(--color-teal)';
+  if (days <= 7) return 'var(--color-amber)';
+  return 'var(--color-terracotta)';
 }
 
-function StatusDot({ contact }) {
-  const days = daysSince(contact.lastContacted || contact.date);
+function StatusBadge({ contact }) {
   if (contact.followUpStatus === 'sent') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-        <span>✓</span> Sent
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
+        style={{ background: 'var(--color-teal-light)', color: 'var(--color-teal)' }}>
+        Sent
       </span>
     );
   }
   if (contact.followUpStatus === 'drafted') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-        Draft ready
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
+        style={{ background: 'var(--color-amber-light)', color: 'var(--color-amber)' }}>
+        Draft
       </span>
     );
   }
-  if (days < 3) {
-    return <span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" title="Follow up not yet needed" />;
-  }
-  if (days < 7) {
-    return <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block animate-pulse" title="Follow up soon" />;
-  }
-  return <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-pulse" title="Overdue!" />;
+  return null;
+}
+
+function formatDaysAgo(days) {
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
 
 export default function ContactCard({ contact, onClick }) {
-  const rotation = getRotation(contact.id);
   const lastContactedDate = contact.lastContacted || contact.date;
   const daysLastContacted = daysSince(lastContactedDate);
-  const daysMet = daysSince(contact.date);
+  const freshnessColor = getFreshnessColor(daysLastContacted);
 
   return (
     <button
       onClick={() => onClick(contact)}
-      style={{ transform: `rotate(${rotation}deg)` }}
-      className="group bg-white rounded-2xl shadow-md border border-gray-100 p-4 text-left cursor-pointer
-        hover:scale-105 hover:shadow-xl hover:rotate-0 transition-all duration-200 ease-out
-        w-full focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      className="group bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] border-l-[3px]
+        p-4 text-left cursor-pointer w-full
+        hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5
+        transition-all duration-200 ease-out
+        focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg)]"
+      style={{ borderLeftColor: freshnessColor }}
     >
-      <div className="flex items-start justify-between mb-2">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
-          {contact.name?.[0]?.toUpperCase() || '?'}
-        </div>
-        <StatusDot contact={contact} />
+      {/* Name + status */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="text-2xl leading-tight truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+          {contact.name}
+        </h3>
+        <StatusBadge contact={contact} />
       </div>
 
-      <h3 className="font-semibold text-gray-900 text-sm leading-tight mt-2 truncate">
-        {contact.name}
-      </h3>
+      {/* Role */}
       {contact.role && (
-        <p className="text-xs text-gray-500 truncate mt-0.5">{contact.role}</p>
+        <p className="text-xs italic mt-0.5 truncate" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>
+          {contact.role}
+        </p>
       )}
 
-      <div className="mt-3 pt-3 border-t border-gray-50">
-        <p className="text-xs text-indigo-600 font-medium truncate">{contact.event}</p>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Last talked: {daysLastContacted === 0 ? 'Today' : daysLastContacted === 1 ? 'Yesterday' : `${daysLastContacted}d ago`}
+      {/* Divider + meta */}
+      <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+        <p className="text-xs font-medium truncate" style={{ color: 'var(--color-teal)' }}>
+          {contact.event}
+        </p>
+        <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-faint)' }}>
+          Last talked {formatDaysAgo(daysLastContacted)}
         </p>
       </div>
 
+      {/* Topics */}
       {contact.topics?.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2.5 flex flex-wrap gap-1">
           {contact.topics.slice(0, 2).map((t, i) => (
-            <span key={i} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md truncate max-w-[90px]">
+            <span key={i} className="text-[11px] italic px-1.5 py-0.5 rounded truncate max-w-[100px]"
+              style={{ background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>
               {t}
             </span>
           ))}
