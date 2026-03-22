@@ -2,13 +2,6 @@
 
 Touchbase is a React app for tracking people you meet, drafting follow-ups with Claude, and keeping lightweight networking notes.
 
-## Current Status
-
-- Supabase project scaffold
-- contacts table migration
-- row-level security policies
-- environment and setup docs
-
 - `src/lib/supabase.js` owns the shared Supabase browser client and validates the required Vite env vars.
 - `src/lib/auth.js` for frontend:
   - `signUpWithEmailPassword(email, password, options?)`
@@ -30,7 +23,7 @@ The intended frontend flow is:
 
 If you disable email confirmations in Supabase, password signup can create an immediately usable session. If confirmations stay enabled, signup may still require the user to verify their email before the session is active.
 
-At this point the app still reads and writes contacts through `localStorage`. The auth layer is available, but no screen or route currently consumes it.
+The app reads and writes contacts through Supabase. Anthropic calls now run server-side through Vercel Functions, while the frontend continues using the same `parseContact()` and `generateFollowUp()` helpers.
 
 ## Local App Development
 
@@ -40,7 +33,7 @@ At this point the app still reads and writes contacts through `localStorage`. Th
    npm install
    ```
 
-2. Copy the environment template and fill in your Anthropic key:
+2. Copy the environment template and fill in your Anthropic and Supabase values:
 
    ```bash
    cp .env.example .env
@@ -66,11 +59,11 @@ At this point the app still reads and writes contacts through `localStorage`. Th
    supabase db reset
    ```
 
-3. Use the local API URL and anon key in `.env` for phase 2:
+3. Use the local API URL and anon key in `.env`:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
 
-4. Keep `VITE_ANTHROPIC_API_KEY` for now. The Anthropic browser call is still the live code path.
+4. For local full-stack testing of the AI routes, use `vercel dev`. `npm run dev` only runs the Vite frontend and will not serve `/api/*` routes by itself.
 
 ## Schema Notes
 
@@ -81,5 +74,3 @@ The Supabase schema mirrors the current app state:
 - contact timing fields for both `met_on` and `last_contacted_on`
 - draft subject/body stored directly on the contact row
 - follow-up state stored on the contact row as status, snooze, and reminder flags
-
-That keeps phase 2 focused on swapping persistence and auth without redesigning the product model at the same time.
