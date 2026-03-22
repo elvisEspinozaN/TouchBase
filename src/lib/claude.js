@@ -1,101 +1,46 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { getSession } from './auth.js';
 
-function getClient() {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('Missing VITE_ANTHROPIC_API_KEY in .env');
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+async function callClaudeRoute(path, payload) {
+  const session = await getSession();
+  const accessToken = session?.access_token;
+
+  if (!accessToken) {
+    throw new Error('Sign in is required before using AI features.');
+  }
+
+  const response = await fetch(`/api/${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  let result = {};
+  try {
+    result = await response.json();
+  } catch {
+    result = {};
+  }
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('AI routes are unavailable. Use `vercel dev` locally or test on a Vercel deployment.');
+    }
+
+    throw new Error(result.error || 'AI request failed.');
+  }
+
+  return result;
 }
 
 export async function parseContact(rawText) {
-  const client = getClient();
-  const today = new Date().toISOString().split('T')[0];
-
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 1024,
-    messages: [
-      {
-        role: 'user',
-        content: `Today's date is ${today}. Parse this networking recap into JSON. Return ONLY valid JSON with no markdown, no code fences.
-
-Schema:
-{
-  "name": string,
-  "role": string (job title and company if mentioned, else ""),
-  "event": string (event name),
-  "date": string (ISO date, infer from "last Friday", "yesterday", etc., or use today if unclear),
-  "topics": string[] (2-5 key conversation topics),
-  "notes": string (anything else worth remembering),
-  "email": "",
-  "followUpDays": number (3 if not specified),
-  "lastContacted": string (ISO date of when user last spoke to this person, infer from "last talked 2 days ago", "spoke last week", etc., or use "date" value if not mentioned)
-}
-
-Recap: "${rawText}"`,
-      },
-    ],
-  });
-
-  const text = response.content.find(b => b.type === 'text')?.text?.trim() || '';
-  const cleaned = text.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
-
-  console.log('[TouchBase] Raw API response:', text);
-  console.log('[TouchBase] Cleaned for parsing:', cleaned);
-
-  let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) parsed = JSON.parse(match[0]);
-    else throw new Error('Could not parse contact from response');
-  }
-
-  // Normalize to array
-  const results = Array.isArray(parsed) ? parsed : [parsed];
-
-  console.log('[TouchBase] Parsed result:', results);
-
-  for (const r of results) {
-    if (!r.name) throw new Error('Could not parse contact — missing name');
-    if (!r.date) r.date = today;
-  }
-
-  return results;
+  const result = await callClaudeRoute('parse-contact', { rawText });
+  return result.contacts ?? [];
 }
 
 export async function generateFollowUp(contact) {
-  const client = getClient();
-
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 512,
-    messages: [
-      {
-        role: 'user',
-        content: `Write a short, warm, personalized follow-up message for this contact. Return ONLY valid JSON with no markdown.
-
-Contact:
-- Name: ${contact.name}
-- Role: ${contact.role}
-- Met at: ${contact.event}
-- Topics discussed: ${contact.topics?.join(', ')}
-- Notes: ${contact.notes}
-
-Return JSON: { "subject": "...", "body": "..." }
-Subject should be friendly, 6-10 words.
-Body should be 2-4 sentences, warm, specific to what you discussed.`,
-      },
-    ],
-  });
-
-  const text = response.content.find(b => b.type === 'text')?.text?.trim() || '';
-  const cleaned = text.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error('Could not parse follow-up from response');
-  }
+  const result = await callClaudeRoute('generate-followup', { contact });
+  return result.draft;
 }
