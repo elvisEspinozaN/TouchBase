@@ -24,7 +24,7 @@ The intended frontend flow is:
 
 1. Collect the user's email and password in a login or signup form.
 2. Call `signUpWithEmailPassword(email, password)` for signup or `signInWithEmailPassword(email, password)` for login.
-3. Keep `signInWithMagicLink(email)` available as an alternate flow if you still want passwordless auth.
+3. Keep `signInWithMagicLink(email)` available as an alternate flow.
 4. On app boot, call `exchangeCodeForSession()` once to consume any redirect code from Supabase.
 5. Use `getSession()` and `onAuthStateChange(...)` to drive signed-in and signed-out UI states.
 

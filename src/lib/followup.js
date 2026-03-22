@@ -1,5 +1,3 @@
-import { updateContact } from './storage.js';
-
 export function daysSince(dateStr) {
   const then = new Date(dateStr);
   const now = new Date();
@@ -17,28 +15,34 @@ export function hasBeenReminded(contact) {
 }
 
 export function getOverdueContacts(contacts) {
-  return contacts.filter(c => isOverdue(c) && c.followUpStatus !== 'sent');
+  return contacts.filter(contact => isOverdue(contact) && contact.followUpStatus !== 'sent');
 }
 
-export function snoozeContact(id, contacts, setContacts) {
+export function hasDraft(contact) {
+  return Boolean(contact.draftSubject || contact.draftBody);
+}
+
+export function getSnoozeUpdates() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const updated = updateContact(id, {
+
+  return {
     snoozedUntil: tomorrow.toISOString().split('T')[0],
     remindedOnce: true,
-  });
-  setContacts(updated);
+  };
 }
 
-export function markSent(id, contacts, setContacts) {
-  const updated = updateContact(id, { followUpStatus: 'sent' });
-  setContacts(updated);
+export function getMarkSentUpdates(draftUpdates = {}) {
+  return {
+    ...draftUpdates,
+    followUpStatus: 'sent',
+  };
 }
 
-export function saveDraft(id, draft, contacts, setContacts) {
-  const updated = updateContact(id, {
+export function getSaveDraftUpdates(draft) {
+  return {
     followUpStatus: 'drafted',
-    draft,
-  });
-  setContacts(updated);
+    draftSubject: draft.subject ?? '',
+    draftBody: draft.body ?? '',
+  };
 }
