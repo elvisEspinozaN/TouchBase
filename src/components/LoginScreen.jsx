@@ -31,35 +31,33 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#f8f7f4' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: 'var(--color-bg)' }}>
       {/* Brand */}
       <div className="text-center mb-8">
         <span className="text-5xl">🤝</span>
-        <h1 className="text-3xl font-bold text-gray-900 mt-3">Touchbase</h1>
-        <p className="text-gray-500 mt-1 text-sm">Stay connected after every meet</p>
+        <h1 className="text-4xl mt-3" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--color-text)' }}>Touchbase</h1>
+        <p className="mt-1 text-sm italic" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>Stay connected after every meet</p>
       </div>
 
       {/* Card */}
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+      <div className="rounded-2xl shadow-xl w-full max-w-sm overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
         {/* Tab toggle */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <button
             onClick={() => switchMode('signin')}
-            className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
-              mode === 'signin'
-                ? 'text-indigo-600 border-b-2 border-indigo-500'
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className="flex-1 py-3.5 text-sm font-semibold transition-colors"
+            style={mode === 'signin'
+              ? { color: 'var(--color-teal)', borderBottom: '2px solid var(--color-teal)' }
+              : { color: 'var(--color-text-faint)' }}
           >
             Sign in
           </button>
           <button
             onClick={() => switchMode('signup')}
-            className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
-              mode === 'signup'
-                ? 'text-indigo-600 border-b-2 border-indigo-500'
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className="flex-1 py-3.5 text-sm font-semibold transition-colors"
+            style={mode === 'signup'
+              ? { color: 'var(--color-teal)', borderBottom: '2px solid var(--color-teal)' }
+              : { color: 'var(--color-text-faint)' }}
           >
             Sign up
           </button>
@@ -68,7 +66,7 @@ export default function LoginScreen() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'var(--color-text-faint)' }}>Email</label>
             <input
               type="email"
               value={email}
@@ -76,14 +74,15 @@ export default function LoginScreen() {
               placeholder="you@example.com"
               required
               disabled={loading}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm
-                placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm
+                focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]
                 disabled:opacity-50 transition-all"
+              style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'var(--color-text-faint)' }}>Password</label>
             <input
               type="password"
               value={password}
@@ -92,21 +91,22 @@ export default function LoginScreen() {
               required
               disabled={loading}
               minLength={6}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm
-                placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm
+                focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]
                 disabled:opacity-50 transition-all"
+              style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)' }}
             />
           </div>
 
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>
+            <p className="text-xs rounded-xl px-3 py-2" style={{ color: 'var(--color-terracotta)', background: 'var(--color-terracotta-light)' }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading || !email || !password}
-            className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white
-              rounded-xl py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            className="w-full text-white rounded-xl py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--color-teal)' }}
           >
             {loading ? (
               <>

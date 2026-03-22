@@ -1,29 +1,9 @@
 import { daysSince } from '../lib/followup.js';
 
 function getFreshnessColor(days) {
-  if (days <= 3) return 'var(--color-teal)';
-  if (days <= 7) return 'var(--color-amber)';
+  if (days < 2) return 'var(--color-teal)';
+  if (days < 4) return 'var(--color-amber)';
   return 'var(--color-terracotta)';
-}
-
-function StatusBadge({ contact }) {
-  if (contact.followUpStatus === 'sent') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
-        style={{ background: 'var(--color-teal-light)', color: 'var(--color-teal)' }}>
-        Sent
-      </span>
-    );
-  }
-  if (contact.followUpStatus === 'drafted') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
-        style={{ background: 'var(--color-amber-light)', color: 'var(--color-amber)' }}>
-        Draft
-      </span>
-    );
-  }
-  return null;
 }
 
 function formatDaysAgo(days) {
@@ -50,16 +30,13 @@ export default function ContactCard({ contact, onClick }) {
       style={{ borderLeftColor: freshnessColor }}
     >
       {/* Name + status */}
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="text-2xl leading-tight truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-          {contact.name}
-        </h3>
-        <StatusBadge contact={contact} />
-      </div>
+      <h3 className="text-3xl leading-tight truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+        {contact.name}
+      </h3>
 
       {/* Role */}
       {contact.role && (
-        <p className="text-xs italic mt-0.5 truncate" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>
+        <p className="text-xs italic mt-0.5 truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-body)' }}>
           {contact.role}
         </p>
       )}
@@ -69,8 +46,8 @@ export default function ContactCard({ contact, onClick }) {
         <p className="text-xs font-medium truncate" style={{ color: 'var(--color-teal)' }}>
           {contact.event}
         </p>
-        <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-faint)' }}>
-          Last talked {formatDaysAgo(daysLastContacted)}
+        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+          Last talked <span className="font-semibold" style={{ color: freshnessColor }}>{formatDaysAgo(daysLastContacted)}</span>
         </p>
       </div>
 
@@ -79,7 +56,7 @@ export default function ContactCard({ contact, onClick }) {
         <div className="mt-2.5 flex flex-wrap gap-1">
           {contact.topics.slice(0, 2).map((t, i) => (
             <span key={i} className="text-[11px] italic px-1.5 py-0.5 rounded truncate max-w-[100px]"
-              style={{ background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>
+              style={{ background: 'var(--color-bg)', color: 'var(--color-text)', fontFamily: 'var(--font-body)' }}>
               {t}
             </span>
           ))}

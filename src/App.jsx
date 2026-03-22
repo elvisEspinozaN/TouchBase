@@ -202,12 +202,11 @@ export default function App() {
   }
 
   const overdue = getOverdueContacts(contacts);
-  const topReminder = overdue[0] || null;
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f8f7f4' }}>
-        <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg)' }}>
+        <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--color-teal)', borderTopColor: 'transparent' }} />
       </div>
     );
   }
@@ -248,9 +247,9 @@ export default function App() {
       </header>
 
       {/* Reminder banner */}
-      {topReminder && (
+      {overdue.length > 0 && (
         <ReminderBanner
-          contact={topReminder}
+          contacts={overdue}
           onSnooze={handleSnooze}
           onDraftNow={handleDraftNow}
           loading={draftingReminder}
